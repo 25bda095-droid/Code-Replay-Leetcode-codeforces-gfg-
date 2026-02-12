@@ -177,9 +177,6 @@ Automatic tag enhancement
 
 Dashboard analytics
 
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome!
