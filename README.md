@@ -177,6 +177,18 @@ Automatic tag enhancement
 
 Dashboard analytics
 
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+Please read the contribution guidelines here:
+
+👉 [View Contribution Guide](CONTRIBUTING.md)
+
+
 More platform support
 
 UI refinements
