@@ -41,6 +41,31 @@ Build consistency. Improve retention. Grow smarter.
 
 🚀 One-click “Open Due Revisions”
 
+---
+
+## 🖼 Screenshots
+
+### 🔹 Extension Popup
+
+<p align="center">
+  <img src="screenshots/popup.png" width="420"/>
+  <img src="screenshots/popup1.png" width="420"/>
+</p>
+
+<p align="center">
+  <img src="screenshots/popup2.png" width="420"/>
+  <img src="screenshots/popup3.png" width="420"/>
+</p>
+
+---
+
+### 📊 Google Sheet Output
+
+<p align="center">
+  <img src="screenshots/sheet.png" width="900"/>
+</p>
+
+
 ⚙️ Complete Setup Guide (Step-by-Step)
 
 Setup takes 3–5 minutes.
