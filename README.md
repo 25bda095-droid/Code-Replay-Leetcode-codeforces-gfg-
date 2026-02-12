@@ -1,69 +1,199 @@
-Code Replay
+🚀 Code Replay
 
-A browser extension to track coding problems from LeetCode, Codeforces, and GeeksforGeeks directly in Google Sheets with revision reminders.
+Track. Solve. Revise. Repeat.
 
-Features
+Code Replay is a browser extension that helps competitive programmers and interview aspirants track coding problems from LeetCode, Codeforces, and GeeksforGeeks directly into their own Google Sheets — with structured notes and intelligent revision tracking.
 
-Save problem title and URL
+<p align="center"> <a href="https://microsoftedge.microsoft.com/addons/detail/code-replaylccfgfg/akpopmljgbamkfcjojgmfmfmpcehpkdn"> <img src="https://img.shields.io/badge/Get%20it%20on-Microsoft%20Edge-blue?logo=microsoftedge&logoColor=white" /> </a> <img src="https://img.shields.io/badge/Manifest-V3-0ea5e9" /> <img src="https://img.shields.io/badge/Platforms-LeetCode%20%7C%20Codeforces%20%7C%20GFG-22c55e" /> <img src="https://img.shields.io/badge/Open%20Source-Yes-brightgreen" /> </p>
+✨ Why Code Replay?
 
-Track difficulty and tags
+Most developers solve problems daily — but rarely revise them properly.
 
-Solved / Attempted status
+Code Replay helps you:
 
-Personal notes and approach
+Organize problems by difficulty and topic
 
-Time and space complexity tracking
+Record your approach and mistakes
 
-Spaced revision reminders
+Track time and space complexity
 
-Open due revisions instantly
+Schedule spaced revision reminders
 
-Setup Guide
+Revisit problems exactly when needed
+
+Build consistency. Improve retention. Grow smarter.
+
+🔥 Features
+
+✅ Automatic problem detection
+
+📌 Save problem title + direct link
+
+📊 Difficulty tracking (Easy / Medium / Hard)
+
+🏷 Pattern & tag organization
+
+📝 Personal approach & mistake notes
+
+⏱ Time & space complexity logging
+
+🔁 Spaced revision reminders (1d / 3d / 7d / 14d)
+
+🚀 One-click “Open Due Revisions”
+
+⚙️ Complete Setup Guide (Step-by-Step)
+
+Setup takes 3–5 minutes.
+
 Step 1 – Create Google Sheet
 
-Go to Google Sheets
+Go to https://sheets.google.com
 
-Create a new sheet
+Click Blank
 
-Copy the Sheet ID from the URL
+Rename it:
 
-Example:
+Code Replay Tracker
 
-https://docs.google.com/spreadsheets/d/SHEET_ID/edit
 
-Step 2 – Add Apps Script
+Create a sheet tab named:
 
-Open:
+Questions
+
+
+(Important: It must be named exactly “Questions”)
+
+Step 2 – Get Your Sheet ID
+
+Your sheet URL looks like:
+
+https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0
+
+
+Copy the part between /d/ and /edit.
+
+That long string is your SHEET_ID.
+
+Step 3 – Add Google Apps Script
+
+Inside your Google Sheet:
 
 Extensions → Apps Script
 
 
-Replace existing code with:
-👉 Click here to copy Code.gs
+Delete all existing code in Code.gs
 
-Set your Sheet ID in this line:
+Open this file from this repository:
+
+👉 apps-script/Code.gs
+
+Click the Copy button in GitHub.
+
+Paste it inside Apps Script.
+
+Find this line:
 
 const SHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
 
-Step 3 – Deploy Web App
 
-Deploy → New Deployment
+Replace it with your actual Sheet ID:
 
-Type: Web App
+const SHEET_ID = "your_real_sheet_id_here";
+
+
+Click Save
+
+Step 4 – Deploy as Web App
+
+Click:
+
+Deploy → New deployment
+
+
+Choose:
+
+Web App
+
+
+Configure:
 
 Execute as: Me
 
-Access: Anyone
+Who has access: Anyone
 
-Copy the /exec URL
+Click Deploy
 
-Step 4 – Connect Extension
+Authorize permissions
 
-Paste the /exec URL into the extension popup.
+Copy the Web App URL (must end with /exec)
 
-Done.
+Example:
 
-Privacy
+https://script.google.com/macros/s/XXXXXXX/exec
 
-This extension does not collect or store personal data.
-All data is stored in the user’s own Google Sheets.
+
+⚠ Do NOT copy /dev link.
+
+Step 5 – Connect the Extension
+
+Open the Code Replay extension
+
+Paste the /exec URL into the popup
+
+Click Save
+
+Open any coding problem page
+
+Click Save inside extension
+
+Your problem will now appear in your Google Sheet 🎉
+
+🔐 Privacy
+
+Code Replay:
+
+Does NOT collect personal information
+
+Does NOT store user data on external servers
+
+Stores all data directly in the user’s own Google Sheets account
+
+Full data control remains with the user.
+
+🛠 Tech Stack
+
+Browser Extension (Manifest V3)
+
+Content Scripts
+
+Background Service Worker
+
+Google Apps Script (Web App)
+
+Google Sheets API
+
+📁 Project Structure
+extension/
+  manifest.json
+  popup.html
+  popup.js
+  background.js
+  content.js
+  icon.png
+
+apps-script/
+  Code.gs
+
+🚀 Future Improvements
+
+Automatic tag enhancement
+
+Dashboard analytics
+
+Multi-platform expansion
+
+UI refinements
+
+Built to encourage structured learning and consistent growth.
+
+If this helps you, consider starring the repository ⭐
