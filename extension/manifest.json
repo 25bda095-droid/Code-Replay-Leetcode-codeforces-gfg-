@@ -72,11 +72,14 @@
       "https://www.codechef.com/problems/*",
       "https://codechef.com/problems/*",
 
-      "https://www.codechef.com/practice/*/problems/*",
-      "https://codechef.com/practice/*/problems/*",
+      "https://www.codechef.com/practice/*",
+      "https://codechef.com/practice/*",
 
-      "https://www.codechef.com/practice/course/*/*/problems/*",
-      "https://codechef.com/practice/course/*/*/problems/*",
+      "https://www.codechef.com/learn/*",
+      "https://codechef.com/learn/*",
+
+      "https://www.codechef.com/*/problems/*",
+      "https://codechef.com/*/problems/*",
 
       "https://www.hackerrank.com/challenges/*",
       "https://hackerrank.com/challenges/*",
