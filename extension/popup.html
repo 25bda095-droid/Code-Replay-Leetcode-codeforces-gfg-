@@ -2,54 +2,421 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Daily Saver</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Code Replay</title>
+
   <style>
-    body { font-family: Arial; width: 370px; padding: 12px; }
-    input, textarea, select { width: 100%; margin: 6px 0; padding: 8px; box-sizing: border-box; }
-    button { width: 100%; padding: 10px; cursor: pointer; margin-top: 8px; }
-    .row { display: flex; gap: 8px; }
-    .row > * { flex: 1; }
-    .muted { opacity: 0.75; font-size: 12px; }
+    :root{
+      --bg: #0b1220;           /* deep slate */
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.04);
+      --stroke: rgba(255,255,255,0.12);
+
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.72);
+      --muted2: rgba(255,255,255,0.55);
+
+      --blue: #3b82f6;         /* primary */
+      --sky: #38bdf8;          /* accent */
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+
+      --shadow: 0 18px 50px rgba(0,0,0,0.45);
+      --radius: 18px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      width: 410px;
+      padding: 14px;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 600px at 20% -10%, rgba(56,189,248,0.10), transparent 60%),
+        radial-gradient(900px 600px at 110% 20%, rgba(59,130,246,0.10), transparent 60%),
+        var(--bg);
+    }
+
+    .wrap{
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,0.18);
+      box-shadow: var(--shadow);
+    }
+
+    .top{
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      display:flex;
+      align-items:center;
+      gap: 12px;
+    }
+
+    .mark{
+      width: 40px; height: 40px;
+      border-radius: 14px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 900;
+      color: white;
+      background: linear-gradient(135deg, rgba(59,130,246,1), rgba(56,189,248,1));
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 10px 25px rgba(59,130,246,0.18);
+      flex: 0 0 auto;
+    }
+
+    .twrap{ flex:1; min-width:0; }
+    .h1{ margin:0; font-size: 16px; font-weight: 900; letter-spacing: -0.2px; }
+    .h2{
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.88);
+      white-space: nowrap;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .dot{ width: 8px; height:8px; border-radius:999px; background: rgba(255,255,255,0.35); }
+    .badge.ok .dot{ background: var(--green); }
+    .badge.warn .dot{ background: var(--amber); }
+    .badge.err .dot{ background: var(--red); }
+
+    .content{
+      padding: 12px 16px 16px;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .cardHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .cardHead .label{
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.88);
+      letter-spacing: 0.2px;
+    }
+    .cardHead .hint{
+      font-size: 11px;
+      color: var(--muted2);
+      text-align: right;
+    }
+
+    label{
+      display:block;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 10px 0 6px;
+    }
+
+    input, textarea, select{
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      padding: 11px 12px;
+      outline: none;
+      font-size: 13px;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    textarea{ resize: vertical; min-height: 82px; }
+
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(59,130,246,0.75);
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
+    }
+
+    .segRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chipRow{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.86);
+      cursor: pointer;
+      user-select:none;
+      transition: background .18s ease, border-color .18s ease, transform .06s ease;
+    }
+    .chip:hover{ background: rgba(255,255,255,0.09); }
+    .chip:active{ transform: translateY(1px); }
+
+    .chip.blue{ border-color: rgba(59,130,246,0.35); }
+    .chip.sky{ border-color: rgba(56,189,248,0.35); }
+
+    .actions{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+      margin-top: 2px;
+    }
+
+    button{
+      border: 0;
+      border-radius: 16px;
+      padding: 12px 12px;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 13px;
+      transition: transform .06s ease, filter .18s ease, opacity .18s ease;
+    }
+    button:active{ transform: translateY(1px); }
+
+    .primary{
+      color: white;
+      background: linear-gradient(135deg, rgba(59,130,246,1), rgba(56,189,248,1));
+      box-shadow: 0 12px 28px rgba(59,130,246,0.18);
+    }
+    .primary:hover{ filter: brightness(1.05); }
+
+    .ghost{
+      color: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .ghost:hover{ background: rgba(255,255,255,0.09); }
+
+    .footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    #statusText{
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    /* Toast */
+    .toast{
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(0,0,0,0.50);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      transition: opacity .20s ease, transform .20s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
+    .toastIcon{
+      width: 30px; height: 30px;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      flex: 0 0 auto;
+    }
+    .toastText{
+      font-size: 12px;
+      color: rgba(255,255,255,0.90);
+      line-height: 1.25;
+      min-width: 0;
+    }
+    .toastText b{ font-weight: 900; }
+    .toast.ok .toastIcon{ border-color: rgba(34,197,94,0.35); }
+    .toast.err .toastIcon{ border-color: rgba(239,68,68,0.35); }
   </style>
 </head>
+
 <body>
-  <h3>Save Problem → Sheets</h3>
+  <div class="wrap">
+    <div class="top">
+      <div class="mark">CR</div>
+      <div class="twrap">
+        <p class="h1">Code Replay</p>
+        <div class="h2">
+          <span style="color:rgba(255,255,255,0.82);">Save problems → Sheets</span>
+          <span class="kbd">Enter</span><span style="color:rgba(255,255,255,0.45);">save</span>
+          <span class="kbd">Ctrl</span><span style="color:rgba(255,255,255,0.45);">+</span><span class="kbd">Enter</span>
+          <span style="color:rgba(255,255,255,0.45);">save & close</span>
+        </div>
+      </div>
 
-  <input id="webapp" placeholder="Apps Script Web App URL (/exec)" />
-  <div class="muted">Paste once; it stays saved.</div>
+      <div class="badge" id="statusPill" title="Status">
+        <span class="dot"></span>
+        <span id="pillText">Ready</span>
+      </div>
+    </div>
 
-  <input id="pattern" placeholder="Pattern / Type (auto-suggests)" />
+    <div class="content">
+      <div class="card">
+        <div class="cardHead">
+          <div class="label">Connection</div>
+          <div class="hint">Paste once • Saved locally</div>
+        </div>
+        <label for="webapp">Apps Script Web App URL (/exec)</label>
+        <input id="webapp" placeholder="https://script.google.com/macros/s/.../exec" />
+      </div>
 
-  <div class="row">
-    <select id="status">
-      <option value="Solved">Solved</option>
-      <option value="Attempted">Attempted</option>
-    </select>
-    <select id="revisionNeeded">
-      <option value="No">Revision: No</option>
-      <option value="Yes" selected>Revision: Yes</option>
-    </select>
+      <div class="card">
+        <div class="cardHead">
+          <div class="label">Quick Setup</div>
+          <div class="hint">Most used fields</div>
+        </div>
+
+        <label for="pattern">Pattern / Type</label>
+        <input id="pattern" placeholder="Auto-suggests (e.g., Sliding Window)" />
+
+        <div class="segRow">
+          <div>
+            <label for="status">Status</label>
+            <select id="status">
+              <option value="Solved">Solved</option>
+              <option value="Attempted">Attempted</option>
+            </select>
+
+            <div class="chipRow" aria-hidden="true">
+              <div class="chip blue" data-set="status" data-value="Solved">Solved</div>
+              <div class="chip sky" data-set="status" data-value="Attempted">Attempted</div>
+            </div>
+          </div>
+
+          <div>
+            <label for="revisionNeeded">Revision</label>
+            <select id="revisionNeeded">
+              <option value="No">No</option>
+              <option value="Yes" selected>Yes</option>
+            </select>
+
+            <div class="chipRow" aria-hidden="true">
+              <div class="chip blue" data-set="revisionNeeded" data-value="Yes">Yes</div>
+              <div class="chip sky" data-set="revisionNeeded" data-value="No">No</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label for="reminders">Reminders</label>
+            <select id="reminders">
+              <option value="none">No reminders</option>
+              <option value="1,3,7">1d + 3d + 7d</option>
+              <option value="1,3,7,14" selected>1d + 3d + 7d + 14d</option>
+              <option value="3,7,21">3d + 7d + 21d</option>
+              <option value="7,14,30">7d + 14d + 30d</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="time">Time Complexity</label>
+            <input id="time" placeholder="O(n)" />
+          </div>
+        </div>
+
+        <label for="space">Space Complexity</label>
+        <input id="space" placeholder="O(1)" />
+
+        <details style="margin-top:10px;">
+          <summary style="cursor:pointer; color:rgba(255,255,255,0.88); font-weight:900; font-size:12px;">
+            Advanced Notes
+            <span style="color:rgba(255,255,255,0.55); font-weight:700;">(approach + mistakes)</span>
+          </summary>
+
+          <label for="approach">Approach</label>
+          <textarea id="approach" rows="3" placeholder="Key idea, steps, why it works"></textarea>
+
+          <label for="notes">Notes / mistakes</label>
+          <textarea id="notes" rows="3" placeholder="Mistake, edge case, what you’ll remember next time"></textarea>
+        </details>
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn" class="primary">Save to Sheet</button>
+        <button id="openDueBtn" class="ghost">Open Due Today</button>
+      </div>
+
+      <div class="footer">
+        <p id="statusText">—</p>
+        <span class="kbd">v1.1.0</span>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">
+      <div class="toastIcon" id="toastIcon">✓</div>
+      <div class="toastText" id="toastText"><b>Ready</b> — waiting for action</div>
+    </div>
   </div>
-
-  <div class="row">
-    <select id="reminders">
-      <option value="none">No reminders</option>
-      <option value="1,3,7">1d + 3d + 7d</option>
-      <option value="1,3,7,14" selected>1d + 3d + 7d + 14d</option>
-      <option value="3,7,21">3d + 7d + 21d</option>
-      <option value="7,14,30">7d + 14d + 30d</option>
-    </select>
-    <input id="time" placeholder="Time (e.g., O(n))" />
-  </div>
-
-  <input id="space" placeholder="Space (e.g., O(1))" />
-  <textarea id="approach" rows="3" placeholder="Approach you used"></textarea>
-  <textarea id="notes" rows="3" placeholder="Notes / mistakes"></textarea>
-
-  <button id="saveBtn">Save</button>
-  <button id="openDueBtn">Open Due Revisions Today</button>
-
-  <p id="statusText"></p>
 
   <script src="popup.js"></script>
 </body>
