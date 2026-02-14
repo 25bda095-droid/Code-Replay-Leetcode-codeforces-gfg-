@@ -25,7 +25,7 @@ Code Replay now supports:
 
 ✅ AtCoder
 
-✨ What’s New (Latest Update)
+✨ What’s New (Latest Update 2.1.0)
 🔥 Improvements & Fixes
 
 ✅ Fixed LeetCode difficulty detection (now correctly detects Easy / Medium / Hard)
