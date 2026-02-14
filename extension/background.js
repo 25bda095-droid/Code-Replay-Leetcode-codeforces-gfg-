@@ -1,21 +1,74 @@
 async function postJSON(url, body) {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  return await r.json();
+  let r;
+  try {
+    r = await fetch(url, {
+      method: "POST",
+      // IMPORTANT: Using application/json often triggers CORS preflight (OPTIONS) and fails on Apps Script.
+      // text/plain avoids preflight and works reliably.
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body),
+      redirect: "follow",
+      cache: "no-store"
+    });
+  } catch (e) {
+    return { success: false, error: "Network error: " + String(e) };
+  }
+
+  let txt = "";
+  try {
+    txt = await r.text();
+  } catch (e) {
+    return { success: false, error: "Failed reading response: " + String(e) };
+  }
+
+  // If Apps Script returns HTML (login/permission/drive error page), show snippet
+  if (!r.ok) {
+    return {
+      success: false,
+      error: `HTTP ${r.status} ${r.statusText}: ${txt.slice(0, 200)}`
+    };
+  }
+
+  try {
+    return JSON.parse(txt);
+  } catch (e) {
+    return {
+      success: false,
+      error: "Non-JSON response (maybe permission/redirect): " + txt.slice(0, 200)
+    };
+  }
+}
+
+function isAllowedWebApp(url) {
+  try {
+    const u = new URL(url);
+
+    // Optional: normalize /u/1/ -> /u/0/ (prevents account-index issues)
+    // NOTE: this does not change the request here, but you can normalize in popup.js too.
+    return (
+      u.hostname === "script.google.com" ||
+      u.hostname === "script.googleusercontent.com"
+    );
+  } catch {
+    return false;
+  }
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // SAVE
   if (msg.type === "SAVE_TO_SHEET") {
+    if (!isAllowedWebApp(msg.webapp)) {
+      sendResponse({ success: false, error: "Invalid Web App URL" });
+      return;
+    }
+
     postJSON(msg.webapp, msg.payload)
       .then(async (data) => {
         // schedule reminders if save succeeded
         if (data.success && Array.isArray(msg.reminders) && msg.reminders.length > 0) {
           for (const d of msg.reminders) {
-            const alarmName = `rev:${Date.now()}:${d}`;
+            const alarmName = `rev:${Date.now()}:${Math.random().toString(16).slice(2)}:${d}`;
+
             chrome.alarms.create(alarmName, { delayInMinutes: d * 24 * 60 });
 
             await chrome.storage.local.set({
@@ -32,6 +85,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   // OPEN DUE TODAY
   if (msg.type === "GET_DUE_TODAY") {
+    if (!isAllowedWebApp(msg.webapp)) {
+      sendResponse({ success: false, error: "Invalid Web App URL" });
+      return;
+    }
+
     postJSON(msg.webapp, { action: "getDue" })
       .then(async (data) => {
         if (!data.success) {
