@@ -23,12 +23,18 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://leetcode.com/*",
-    "https://codeforces.com/*",
-    "https://www.geeksforgeeks.org/*",
-    "https://practice.geeksforgeeks.org/*",
-    "https://script.google.com/*"
-  ],
+  "https://leetcode.com/*",
+  "https://www.codeforces.com/*",
+  "https://codeforces.com/*",
+  "https://www.codechef.com/*",
+  "https://codechef.com/*",
+  "https://www.hackerrank.com/*",
+  "https://hackerrank.com/*",
+  "https://www.interviewbit.com/*",
+  "https://interviewbit.com/*",
+  "https://atcoder.jp/*",
+  "https://cses.fi/*"
+],
   "background": {
     "service_worker": "background.js"
   },
@@ -46,4 +52,5 @@
       ]
     }
   ]
+
 }
