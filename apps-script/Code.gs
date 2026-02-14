@@ -3,7 +3,8 @@ function doGet(e) {
     .createTextOutput(JSON.stringify({ success: true, message: "Web app is live ✅" }))
     .setMimeType(ContentService.MimeType.JSON);
 }
-const SHEET_ID = "Enter-Your-google-sheet-id";
+
+const SHEET_ID = "Paste Your Sheet Id Here";   // <-- put your sheet id
 const SHEET_NAME = "Questions";
 
 const HEADERS = [
@@ -14,20 +15,23 @@ const HEADERS = [
   "Difficulty",           // E
   "Tags",                 // F
   "Pattern / Type",       // G
-  "Status",               // H  Solved/Attempted
+  "Status",               // H
   "Approach",             // I
   "Notes",                // J
   "Time",                 // K
   "Space",                // L
-  "Revision Needed",      // M  Yes/No
-  "Next Revision Dates",  // N  CSV of ISO dates
+  "Revision Needed",      // M
+  "Next Revision Dates",  // N (CSV of dates)
   "Last Updated"          // O
 ];
 
 function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+
   try {
     const body = parseBody_(e);
-    const action = body.action || "save";
+    const action = (body.action || "save").toString();
 
     if (action === "init") {
       initSheet_();
@@ -39,32 +43,40 @@ function doPost(e) {
       const sheet = getSheet_();
 
       const now = new Date();
+
+      // tags can be array OR string
+      const tagsArr = Array.isArray(body.tags)
+        ? body.tags
+        : (typeof body.tags === "string" ? body.tags.split(",") : []);
+      const tags = tagsArr.map(s => String(s).trim()).filter(Boolean).join(", ");
+
+      // nextRevisionDates can be array OR string
       const nextDates = Array.isArray(body.nextRevisionDates)
-        ? body.nextRevisionDates.join(",")
-        : (body.nextRevisionDates || "");
+        ? body.nextRevisionDates.map(String).map(s => s.trim()).filter(Boolean).join(",")
+        : (body.nextRevisionDates ? String(body.nextRevisionDates).trim() : "");
 
-      sheet.appendRow([
-        now,
-        body.platform || "",
-        body.title || "",
-        body.url || "",
-        body.difficulty || "",
-        (body.tags || []).join(", "),
-        body.pattern || "",
-        body.status || "Attempted",
-        body.approach || "",
-        body.notes || "",
-        body.time || "",
-        body.space || "",
-        body.revision || "No",
-        nextDates,
-        now
-      ]);
+      const row = [
+        now,                              // Date Added
+        body.platform || "",              // Platform
+        body.title || "",                 // Title
+        body.url || "",                   // URL
+        body.difficulty || "",            // Difficulty
+        tags,                             // Tags
+        body.pattern || "",               // Pattern / Type
+        body.status || "Attempted",       // Status
+        body.approach || "",              // Approach
+        body.notes || "",                 // Notes
+        body.time || "",                  // Time
+        body.space || "",                 // Space
+        body.revision || "No",            // Revision Needed
+        nextDates,                        // Next Revision Dates (CSV)
+        now                               // Last Updated
+      ];
 
+      sheet.appendRow(row);
       return json_({ success: true, message: "Saved" });
     }
 
-    // Return due revisions for a date (default today)
     if (action === "getDue") {
       initSheet_();
       const sheet = getSheet_();
@@ -72,19 +84,19 @@ function doPost(e) {
       if (values.length <= 1) return json_({ success: true, due: [] });
 
       const tz = Session.getScriptTimeZone();
-      const target = body.dateISO
-        ? new Date(body.dateISO)
-        : new Date();
 
-      // Compare by local date (yyyy-MM-dd)
+      // If popup sends YYYY-MM-DD, parse it safely
+      const target = body.dateISO ? new Date(String(body.dateISO)) : new Date();
       const targetKey = Utilities.formatDate(target, tz, "yyyy-MM-dd");
-      const due = [];
 
+      const due = [];
       for (let i = 1; i < values.length; i++) {
         const row = values[i];
-        const url = row[3];
-        const title = row[2];
+
         const platform = row[1];
+        const title = row[2];
+        const url = row[3];
+
         const revisionNeeded = row[12];
         const nextRevisionDates = row[13] || "";
 
@@ -97,28 +109,30 @@ function doPost(e) {
           .filter(Boolean);
 
         const isDue = dates.some(d => {
+          // supports YYYY-MM-DD or full ISO
           const dt = new Date(d);
           if (isNaN(dt.getTime())) return false;
           const key = Utilities.formatDate(dt, tz, "yyyy-MM-dd");
           return key === targetKey;
         });
 
-        if (isDue) {
-          due.push({ title, url, platform });
-        }
+        if (isDue) due.push({ title, url, platform });
       }
 
       return json_({ success: true, due });
     }
 
     return json_({ success: false, error: "Unknown action: " + action });
+
   } catch (err) {
     return json_({ success: false, error: String(err) });
+  } finally {
+    lock.releaseLock();
   }
 }
 
 function initSheet_() {
-  if (!SHEET_ID || SHEET_ID.includes("PASTE_YOUR_SHEET_ID")) {
+  if (!SHEET_ID || SHEET_ID.includes("PASTE_YOUR_SHEET_ID") || SHEET_ID === "id here") {
     throw new Error("Set SHEET_ID in Apps Script");
   }
 
@@ -126,17 +140,32 @@ function initSheet_() {
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
 
-  const firstRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
-  const empty = firstRow.every(x => x === "" || x === null);
+  ensureHeaders_(sheet);
 
-  if (empty) {
+  // basic formatting
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, HEADERS.length)
+    .setFontWeight("bold")
+    .setBackground("#f3f4f6")
+    .setWrap(true);
+
+  // widths (tune as you like)
+  sheet.setColumnWidth(3, 260);  // Title
+  sheet.setColumnWidth(4, 330);  // URL
+  sheet.setColumnWidth(9, 380);  // Approach
+  sheet.setColumnWidth(10, 380); // Notes
+}
+
+function ensureHeaders_(sheet) {
+  const range = sheet.getRange(1, 1, 1, HEADERS.length);
+  const row = range.getValues()[0];
+
+  const empty = row.every(x => x === "" || x === null);
+  const mismatch = !empty && HEADERS.some((h, i) => String(row[i] || "").trim() !== h);
+
+  if (empty || mismatch) {
     sheet.clear();
-    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-    sheet.setFrozenRows(1);
-    sheet.setColumnWidth(3, 260);
-    sheet.setColumnWidth(4, 330);
-    sheet.setColumnWidth(9, 380);
-    sheet.setColumnWidth(10, 380);
+    range.setValues([HEADERS]);
   }
 }
 
@@ -159,6 +188,7 @@ function parseBody_(e) {
     obj[decodeURIComponent(k.replace(/\+/g, " "))] =
       decodeURIComponent((v || "").replace(/\+/g, " "));
   });
+
   return obj;
 }
 
