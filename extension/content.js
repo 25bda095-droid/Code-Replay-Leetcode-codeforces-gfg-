@@ -140,44 +140,141 @@ function extractGFG() {
 
 // -------------------- CodeChef --------------------
 function extractCodeChef() {
-  // CodeChef uses dynamic app; selectors vary
-  const title =
-    pickText([
-      "h1",
-      "header h1",
-      ".problem-name",
-      "[data-testid='problem-name']",
-    ]) || document.title;
+  const urlStr = location.href;
 
-  // Difficulty sometimes shown as: "Difficulty: Easy/Medium/Hard" or star level
-  let difficulty =
-    pickText([
-      "[data-testid='difficulty']",
-      "div:has(> span) span:contains('Difficulty')", // not supported in querySelector, ignore
-    ]);
+  // ---- Problem Code (from URL) ----
+  let problemCode = "";
+  try {
+    const u = new URL(urlStr);
+    const parts = u.pathname.split("/").filter(Boolean);
+    const idx = parts.findIndex(p => p.toLowerCase() === "problems");
+    if (idx !== -1 && parts[idx + 1]) problemCode = parts[idx + 1].toUpperCase();
+  } catch {}
 
-  if (!difficulty) {
-    const txt = document.body?.innerText || "";
-    const m = txt.match(/Difficulty\s*:\s*(Easy|Medium|Hard)/i);
-    if (m && m[1]) difficulty = m[1];
+  const bad = (s) => {
+    const t = (s || "").trim().toLowerCase();
+    if (!t) return true;
+    return (
+      t === "statement" ||
+      t === "submissions" ||
+      t === "solution" ||
+      t === "hints" ||
+      t === "ai help" ||
+      t.includes("welcome to the codechef ai tutor")
+    );
+  };
+
+  // ---- Title: try to get from statement pane only ----
+  let title = "";
+
+  // 1) Try “statement” content area headings first
+  // We avoid global h1/h2 because CodeChef uses them for tabs.
+  const statementRoots = [
+    "section",               // often statement sits in a section
+    "main",                  // sometimes inside main
+    "[role='main']",
+    "div[class*='statement']",
+    "div[class*='problem']",
+    "div[class*='content']",
+  ];
+
+  for (const rootSel of statementRoots) {
+    const root = document.querySelector(rootSel);
+    if (!root) continue;
+
+    const hs = [...root.querySelectorAll("h1, h2, h3")]
+      .map(el => (el.textContent || "").trim())
+      .filter(Boolean)
+      .filter(x => !bad(x));
+
+    // choose the best heading: usually longest meaningful
+    if (hs.length) {
+      title = hs.sort((a, b) => b.length - a.length)[0];
+      if (title) break;
+    }
   }
 
-  // Tags/topics sometimes appear as chips
-  const tags = uniq(
-    [
-      ...document.querySelectorAll(
-        "a[href*='/tags/'], a[href*='/tag/'], a[href*='topics'], span[class*='tag'], div[class*='tag']"
-      )
-    ].map(el => el.textContent.trim())
-  );
+  // 2) If still empty, try to detect title from the first strong line of text
+  // (sometimes headings are not h1/h2)
+  if (!title) {
+    const text = (document.body?.innerText || "").split("\n").map(s => s.trim()).filter(Boolean);
+    const candidates = text
+      .filter(s => s.length >= 6 && s.length <= 80)
+      .filter(s => !bad(s))
+      .filter(s => !/^difficulty\s*[:：]/i.test(s))
+      .filter(s => !/^\d+$/.test(s)); // not pure numbers
+    // pick first reasonable line
+    title = candidates[0] || "";
+  }
+
+  // 3) Final fallback: use problemCode as title
+  if (!title) {
+    title = problemCode ? problemCode : "CodeChef Problem";
+  }
+
+  // Append problem code to title if not already included
+  if (problemCode && !title.toUpperCase().includes(problemCode)) {
+    title = `${title} (${problemCode})`;
+  }
+
+  // ---- Difficulty ----
+  let difficulty = "";
+  const txt = document.body?.innerText || "";
+  const mRating = txt.match(/Difficulty\s*:\s*(\d+)/i);
+  if (mRating && mRating[1]) difficulty = `CC ${mRating[1]}`;
+
+// ---- Cleaned & Smart Tags for CodeChef ----
+function isJunkTag(s) {
+  const t = (s || "").trim().toLowerCase();
+  if (!t) return true;
+
+  // Remove UI junk
+  if (t.includes("%")) return true;          // "0% complete"
+  if (t.includes("complete")) return true;
+  if (t === "next" || t === "prev") return true;
+  if (t === "submit" || t === "run") return true;
+  if (t === "statement" || t === "solution" || t === "hints") return true;
+  if (t === "ai help") return true;
+
+  // Remove useless short/noise strings
+  if (t.length <= 2) return true;
+  if (/^[0-9]+$/.test(t)) return true;
+
+  return false;
+}
+
+let tags = uniq(
+  [...document.querySelectorAll("a[href*='tag'], a[href*='tags'], span[class*='tag'], div[class*='tag']")]
+    .map(el => (el.textContent || "").trim())
+).filter(t => !isJunkTag(t));
+
+// Always add strong useful tags
+if (problemCode) tags.unshift(`CODE:${problemCode}`);
+
+// Add track/course info from URL (very useful for CodeChef practice)
+try {
+  const u = new URL(urlStr);
+  const parts = u.pathname.split("/").filter(Boolean);
+
+  const courseIdx = parts.findIndex(p => p.toLowerCase() === "course");
+  if (courseIdx !== -1) {
+    const track = parts[courseIdx + 1];
+    const course = parts[courseIdx + 2];
+
+    if (track) tags.unshift(`TRACK:${track}`);
+    if (course) tags.unshift(`COURSE:${course}`);
+  }
+} catch {}
+
 
   return {
     platform: "CodeChef",
     title,
-    url: location.href,
+    url: urlStr,
     difficulty: normalizeDifficulty(difficulty),
     tags,
-    patternSuggested: suggestPattern(tags, title)
+    patternSuggested: suggestPattern(tags, title),
+    problemCode
   };
 }
 
